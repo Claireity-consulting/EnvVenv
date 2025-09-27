@@ -167,12 +167,18 @@ def apply_ios(cfg: Dict[str, Any]) -> None:
     launch_args: Dict[str, Any] = app.get("launch_args", {})
     launch_env: Dict[str, Any] = app.get("launch_env", {})
     if bundle_id:
-        if app_path and os.path.exists(app_path):
+        app_path_exists = bool(app_path and os.path.exists(app_path))
+        if app_path and not app_path_exists:
+            raise FileNotFoundError(f"iOS app path '{app_path}' does not exist")
+
+        if app_path_exists:
+            # Reinstall from the provided bundle to guarantee the latest build.
+            run(["xcrun", "simctl", "uninstall", device_udid, bundle_id])
             run(["xcrun", "simctl", "install", device_udid, app_path])
-        # Uninstall first to ensure a clean start.
-        run(["xcrun", "simctl", "uninstall", device_udid, bundle_id])
-        if app_path and os.path.exists(app_path):
-            run(["xcrun", "simctl", "install", device_udid, app_path])
+        else:
+            print(
+                "No app_path provided for iOS; assuming the bundle is already installed on the simulator."
+            )
         # Construct launch command with environment variables.
         cmd = ["xcrun", "simctl", "launch", device_udid]
         for key, value in launch_env.items():
