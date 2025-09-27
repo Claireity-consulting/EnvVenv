@@ -1,0 +1,38 @@
+# Example EnvVenv configuration
+
+# The platform to target.  Supported values are `android` or `ios`.
+platform: android
+
+# A unique name or UDID for the emulator/simulator.  For Android
+# this should match a managed device defined in build.gradle or the name of
+# an already running emulator.  For iOS it must be the UDID of the target simulator.
+device: pixel6_api34
+
+world:
+  # Set an explicit timezone.  If omitted the device timezone is left untouched.
+  timezone: "Europe/Brussels"
+  # Locale expressed as language‑territory.
+  locale: "en-US"
+  # Network conditions to simulate.  Each field is optional.
+  network:
+    profile: "lte"  # Possible values include 'gsm', 'edge', 'umts', 'lte', etc.
+    latency: "gprs" # Additional latency preset; 'none' disables extra delay.
+  # Virtual GPS coordinates.  Provide both latitude and longitude.
+  gps:
+    lat: 50.8503
+    lon: 4.3517
+  # Battery level percentage (0–100).  Only affects simulators/emulators.
+  battery: 27
+
+app:
+  # Package name (Android) or bundle identifier (iOS) of your application.
+  package: com.example.app
+  # Optional path to your APK (Android) or .app bundle (iOS).  If provided
+  # EnvVenv will install it before launch.
+  # apk: path/to/your/app-debug.apk
+  # app_path: path/to/YourApp.app
+  # Launch arguments are passed to the app at startup.  On Android these
+  # become string extras; on iOS they become `-Key=Value` arguments.
+  launch_args:
+    TestProfile: checkout
+    RNG_SEED: "12345"
