@@ -31,6 +31,7 @@ world:
 app:
   package: "com.example.app"
   app_path: "/path/to/MyApp.app"  # iOS only; omit to reuse an already-installed build
+
   activity: "com.example.app.ui.CheckoutActivity"
   launch_args:
     TestProfile: "checkout"
@@ -52,6 +53,7 @@ python3 envvenv.py --config my_repro.yaml
 The script will determine whether you are targeting Android or iOS and issue the appropriate shell commands.  For Android it uses `adb` and the emulator console; for iOS it uses `xcrun simctl`.  If a section is omitted from the YAML, EnvVenv leaves that aspect untouched.
 
 Android launch arguments are typed automatically based on their YAML representation—booleans are sent with `--ez`, integers with `--ei`, floats with `--ef`, and lists become comma‑separated string arrays.  On iOS you can now inject deterministic environment variables alongside the CLI arguments by using the `launch_env` map.
+
 If you omit `app.app_path` for an iOS configuration, EnvVenv will skip installation and simply launch whichever build of the bundle identifier is already present on the simulator.
 
 ## Scripts
