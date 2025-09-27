@@ -30,9 +30,16 @@ world:
 # App configuration for launch.  You can pass extra arguments or environment variables here.
 app:
   package: "com.example.app"
+  activity: "com.example.app.ui.CheckoutActivity"
   launch_args:
     TestProfile: "checkout"
-    RNG_SEED: "12345"
+    RNG_SEED: 12345
+    EnableCoupons: true
+    SupportedLocales:
+      - "en-US"
+      - "fr-FR"
+  launch_env:  # iOS only
+    API_ROOT: "https://staging.example.com"
 ```
 
 Once you have a YAML file, run the `envvenv.py` script to apply it:
@@ -42,6 +49,8 @@ python3 envvenv.py --config my_repro.yaml
 ```
 
 The script will determine whether you are targeting Android or iOS and issue the appropriate shell commands.  For Android it uses `adb` and the emulator console; for iOS it uses `xcrun simctl`.  If a section is omitted from the YAML, EnvVenv leaves that aspect untouched.
+
+Android launch arguments are typed automatically based on their YAML representation—booleans are sent with `--ez`, integers with `--ei`, floats with `--ef`, and lists become comma‑separated string arrays.  On iOS you can now inject deterministic environment variables alongside the CLI arguments by using the `launch_env` map.
 
 ## Scripts
 
@@ -66,7 +75,9 @@ Feel free to customise these scripts to your project.  They are examples rather 
 | `world.gps.lat` / `world.gps.lon` | number | Latitude and longitude for the virtual GPS. |
 | `world.battery` | integer | Battery level percentage (0–100). |
 | `app.package` | string | Bundle identifier or package name of your app. |
-| `app.launch_args` | map | Key‑value pairs passed as extras or arguments when launching the app. |
+| `app.activity` | string | (Android) Component name or activity class to launch.  Defaults to `.MainActivity`. |
+| `app.launch_args` | map | Key‑value pairs passed as extras (Android) or CLI arguments (iOS).  Android extras are typed automatically based on YAML values. |
+| `app.launch_env` | map | (iOS) Environment variables injected when launching the app. |
 
 ## License
 
