@@ -85,6 +85,7 @@ def apply_android(cfg: Dict[str, Any]) -> None:
     package_name = app.get("package")
     apk_path = app.get("apk")
     launch_args: Dict[str, Any] = app.get("launch_args", {})
+    activity_override = app.get("activity")
     if package_name:
         if apk_path:
             # Install the APK if provided.
@@ -92,9 +93,30 @@ def apply_android(cfg: Dict[str, Any]) -> None:
         # Clear app data to ensure a clean state.
         run(["adb", "shell", "pm", "clear", package_name])
         # Build the am start command with extras.
-        cmd = ["adb", "shell", "am", "start", "-n", f"{package_name}/.MainActivity"]
+        if activity_override:
+            if "/" in activity_override:
+                component = activity_override
+            elif activity_override.startswith("."):
+                component = f"{package_name}/{activity_override}"
+            elif "." in activity_override:
+                component = f"{package_name}/{activity_override}"
+            else:
+                component = f"{package_name}/.{activity_override}"
+        else:
+            component = f"{package_name}/.MainActivity"
+
+        cmd = ["adb", "shell", "am", "start", "-n", component]
         for key, value in launch_args.items():
-            cmd.extend(["--es", key, str(value)])
+            if isinstance(value, bool):
+                cmd.extend(["--ez", key, "true" if value else "false"])
+            elif isinstance(value, int):
+                cmd.extend(["--ei", key, str(value)])
+            elif isinstance(value, float):
+                cmd.extend(["--ef", key, str(value)])
+            elif isinstance(value, (list, tuple)):
+                cmd.extend(["--esa", key, ",".join(map(str, value))])
+            else:
+                cmd.extend(["--es", key, str(value)])
         run(cmd)
     else:
         print("No package specified; skipping app installation and launch.")
@@ -143,15 +165,25 @@ def apply_ios(cfg: Dict[str, Any]) -> None:
     bundle_id = app.get("package")
     app_path = app.get("app_path")
     launch_args: Dict[str, Any] = app.get("launch_args", {})
+    launch_env: Dict[str, Any] = app.get("launch_env", {})
     if bundle_id:
-        if app_path and os.path.exists(app_path):
+        app_path_exists = bool(app_path and os.path.exists(app_path))
+        if app_path and not app_path_exists:
+            raise FileNotFoundError(f"iOS app path '{app_path}' does not exist")
+
+        if app_path_exists:
+            # Reinstall from the provided bundle to guarantee the latest build.
+            run(["xcrun", "simctl", "uninstall", device_udid, bundle_id])
             run(["xcrun", "simctl", "install", device_udid, app_path])
-        # Uninstall first to ensure a clean start.
-        run(["xcrun", "simctl", "uninstall", device_udid, bundle_id])
-        if app_path and os.path.exists(app_path):
-            run(["xcrun", "simctl", "install", device_udid, app_path])
+        else:
+            print(
+                "No app_path provided for iOS; assuming the bundle is already installed on the simulator."
+            )
         # Construct launch command with environment variables.
-        cmd = ["xcrun", "simctl", "launch", device_udid, bundle_id]
+        cmd = ["xcrun", "simctl", "launch", device_udid]
+        for key, value in launch_env.items():
+            cmd.extend(["--env", str(key), str(value)])
+        cmd.append(bundle_id)
         for key, value in launch_args.items():
             cmd.extend(["--args", f"-{key}={value}"])
         run(cmd)
